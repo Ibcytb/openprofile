@@ -1,0 +1,262 @@
+/* ============================================================
+   만화 뷰어 — style.css
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+/* ── 리셋 & 변수 ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f0f0f;
+  --surface:   #1a1a1a;
+  --border:    #2e2e2e;
+  --accent:    #e8c96a;
+  --text:      #e0e0e0;
+  --muted:     #666;
+
+  --header-h:  52px;
+  --footer-h:  80px;
+  --bar-w:     clamp(60px, 8vw, 120px); /* 양쪽 가림 바 너비 */
+
+  --zoom:      1;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── 헤더 ────────────────────────────────────────────────── */
+.viewer-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  z-index: 100;
+}
+
+.title-text {
+  font-size: 15px; font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.page-indicator {
+  font-size: 13px; color: var(--muted);
+  background: #222; padding: 4px 14px; border-radius: 20px;
+  letter-spacing: .05em;
+}
+.page-indicator #currentPage { color: var(--accent); font-weight: 700; }
+
+/* 줌 버튼 */
+.zoom-btn {
+  background: #222; border: 1px solid var(--border);
+  color: var(--text); font-size: 17px;
+  width: 32px; height: 32px;
+  border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.zoom-btn:hover { background: #2e2e2e; border-color: var(--accent); color: var(--accent); }
+
+.zoom-label {
+  font-size: 12px; min-width: 42px; text-align: center;
+  color: var(--muted); letter-spacing: .04em;
+}
+
+.header-right { display: flex; align-items: center; gap: 6px; }
+
+/* ── 뷰어 래퍼 ───────────────────────────────────────────── */
+.viewer-wrapper {
+  position: fixed;
+  top: var(--header-h);
+  bottom: var(--footer-h);
+  left: 0; right: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* ── 사이드 가림 바 ──────────────────────────────────────── */
+/*
+  이미지 가로 너비의 딱 바깥에서 시작해 화면 끝까지 덮는 바.
+  포인터 이벤트 없이 순수 오버레이.
+*/
+.side-bar {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: var(--bar-w);
+  background: var(--bg);
+  z-index: 30;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.left-bar  { left: 0; }
+.right-bar { right: 0; }
+
+/* ── 스크롤 컨테이너 ─────────────────────────────────────── */
+/*
+  overflow-x: scroll → 가로 드래그/슬라이드 처리.
+  스크롤바는 숨기고 JS로 커스텀 처리.
+*/
+.scroll-container {
+  width: 100%; height: 100%;
+  overflow-x: scroll; overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE */
+  cursor: grab;
+  display: flex; align-items: center;
+}
+.scroll-container::-webkit-scrollbar { display: none; }
+.scroll-container.grabbing { cursor: grabbing; }
+
+/* ── 이미지 스트립 ───────────────────────────────────────── */
+/*
+  모든 이미지를 가로로 붙여 놓는 strip.
+  각 이미지는 뷰어 높이에 맞게 스케일.
+*/
+.image-strip {
+  display: flex; align-items: center;
+  height: 100%;
+  /* 좌우 패딩 = 사이드바 너비 → 첫/끝 이미지가 중앙에 오게 */
+  padding: 0 var(--bar-w);
+  gap: 0;
+  will-change: transform;
+}
+
+/* ── 개별 이미지 슬라이드 ────────────────────────────────── */
+.page-slide {
+  flex-shrink: 0;
+  height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: filter .2s;
+}
+
+.page-slide img {
+  height: calc(100% * var(--zoom));
+  max-height: calc(100% * var(--zoom));
+  width: auto;
+  display: block;
+  object-fit: contain;
+  border-radius: 2px;
+  box-shadow: 0 4px 40px rgba(0,0,0,.7);
+  drag: none; -webkit-user-drag: none;
+  pointer-events: none;
+  transition: height .2s, max-height .2s;
+}
+
+/* 현재 페이지 강조 */
+.page-slide.active img {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 40px rgba(0,0,0,.7);
+}
+
+/* ── 네비게이션 화살표 ───────────────────────────────────── */
+.nav-arrow {
+  position: fixed;
+  top: 50%; transform: translateY(-50%);
+  z-index: 50;
+  background: rgba(20,20,20,.75);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 36px;
+  width: 48px; height: 80px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, opacity .2s;
+  opacity: .45;
+  backdrop-filter: blur(4px);
+}
+.nav-arrow:hover { opacity: 1; color: var(--accent); background: rgba(30,30,30,.9); }
+.nav-arrow:disabled { opacity: .1; pointer-events: none; }
+
+.nav-left  { left: calc(var(--bar-w) + 4px); }
+.nav-right { right: calc(var(--bar-w) + 4px); }
+
+/* ── 푸터 ────────────────────────────────────────────────── */
+.viewer-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--footer-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+  z-index: 100;
+}
+
+/* 썸네일 트랙 */
+.thumb-track {
+  display: flex; align-items: center; gap: 6px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  max-width: 100%;
+  padding: 0 4px;
+}
+.thumb-track::-webkit-scrollbar { height: 3px; }
+.thumb-track::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.thumb-item {
+  flex-shrink: 0;
+  width: 36px; height: 46px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+  position: relative;
+}
+.thumb-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.thumb-item:hover { transform: scale(1.08); border-color: var(--muted); }
+.thumb-item.active { border-color: var(--accent); }
+
+/* 번호 뱃지 */
+.thumb-item::after {
+  content: attr(data-index);
+  position: absolute; bottom: 0; right: 0;
+  background: rgba(0,0,0,.7);
+  font-size: 8px; color: #fff;
+  padding: 1px 3px;
+  border-radius: 2px 0 0 0;
+}
+
+/* 프로그레스 바 */
+.progress-bar-wrap {
+  width: 100%; max-width: 600px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%; width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .2s;
+}
+
+/* ── 모바일 ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root {
+    --header-h: 44px;
+    --footer-h: 64px;
+    --bar-w: 40px;
+  }
+  .title-text { font-size: 13px; }
+  .nav-arrow { display: none; }
+  .thumb-item { width: 28px; height: 36px; }
+}

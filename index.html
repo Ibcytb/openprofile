@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>만화 뷰어</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 상단 UI -->
+  <header class="viewer-header">
+    <div class="header-left">
+      <span class="title-text">📖 만화 뷰어</span>
+    </div>
+    <div class="header-center">
+      <span class="page-indicator">
+        <span id="currentPage">1</span> / <span id="totalPages">—</span>
+      </span>
+    </div>
+    <div class="header-right">
+      <button class="zoom-btn" id="zoomOut" title="축소">－</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="zoom-btn" id="zoomIn" title="확대">＋</button>
+      <button class="zoom-btn" id="zoomReset" title="원래 크기">⊡</button>
+    </div>
+  </header>
+
+  <!-- 뷰어 본체 -->
+  <div class="viewer-wrapper" id="viewerWrapper">
+    <!-- 왼쪽 오버레이 바 (이전 이미지 가리기) -->
+    <div class="side-bar left-bar" id="leftBar"></div>
+
+    <!-- 스크롤 컨테이너 -->
+    <div class="scroll-container" id="scrollContainer">
+      <div class="image-strip" id="imageStrip">
+        <!-- 이미지들이 JS로 삽입됨 -->
+      </div>
+    </div>
+
+    <!-- 오른쪽 오버레이 바 (다음 이미지 가리기) -->
+    <div class="side-bar right-bar" id="rightBar"></div>
+  </div>
+
+  <!-- 하단 스크롤바 / 썸네일 -->
+  <footer class="viewer-footer">
+    <div class="thumb-track" id="thumbTrack">
+      <!-- 썸네일 JS로 삽입 -->
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </footer>
+
+  <!-- 네비게이션 화살표 -->
+  <button class="nav-arrow nav-left" id="navLeft" title="이전">&#8249;</button>
+  <button class="nav-arrow nav-right" id="navRight" title="다음">&#8250;</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
